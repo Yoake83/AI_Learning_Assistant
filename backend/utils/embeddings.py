@@ -1,17 +1,18 @@
-import os
+from sentence_transformers import SentenceTransformer
 import numpy as np
-from groq import Groq
-from dotenv import load_dotenv
 
-load_dotenv()
+# Free local model — no API key needed, runs on CPU fine
+# 384-dimensional embeddings
+MODEL_NAME = "all-MiniLM-L6-v2"
+EMBEDDING_DIM = 384
 
-client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-
-# Groq uses llama embedding model — 1024-dimensional
-EMBEDDING_MODEL = "llama3-groq-8b-8192-tool-use-preview"  # fallback, see below
-EMBEDDING_DIM = 1024
-CHUNK_SIZE = 800    # words per chunk
+CHUNK_SIZE = 800   # words per chunk
 CHUNK_OVERLAP = 100  # overlap between chunks
+
+# Load once at startup (cached in memory)
+print(f"Loading embedding model '{MODEL_NAME}'...")
+_model = SentenceTransformer(MODEL_NAME)
+print("Embedding model loaded ✅")
 
 
 def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVERLAP) -> list[str]:
@@ -28,34 +29,15 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
 
 
 def get_embedding(text: str) -> list[float]:
-    """Get a single embedding vector using Groq API."""
-    try:
-        response = client.embeddings.create(
-            model="nomic-embed-text-v1_5",
-            input=text,
-        )
-        return response.data[0].embedding
-    except Exception as e:
-        print(f"Groq embedding error: {e}, falling back to simple hash embedding")
-        return _fallback_embedding(text)
+    """Get a single embedding vector for a text string."""
+    embedding = _model.encode(text, convert_to_numpy=True)
+    return embedding.tolist()
 
 
 def get_embeddings_batch(texts: list[str]) -> list[list[float]]:
-    """Get embeddings for multiple texts."""
-    embeddings = []
-    for text in texts:
-        emb = get_embedding(text)
-        embeddings.append(emb)
-    return embeddings
-
-
-def _fallback_embedding(text: str) -> list[float]:
-    """
-    Simple deterministic fallback embedding using numpy.
-    Used only if Groq embedding API fails.
-    """
-    np.random.seed(hash(text) % (2**32))
-    return np.random.rand(768).tolist()
+    """Get embeddings for multiple texts efficiently in one batch."""
+    embeddings = _model.encode(texts, convert_to_numpy=True, batch_size=32, show_progress_bar=False)
+    return embeddings.tolist()
 
 
 def process_text_to_chunks(text: str) -> list[dict]:
