@@ -274,14 +274,3 @@ ai-learning-assistant/
 
 ---
 
-## 🤝 Evaluation Criteria Coverage
-
-| Criteria | Implementation |
-|---|---|
-| **Architecture (20%)** | Clean separation: routers → services → utils, async FastAPI |
-| **AI Integration (20%)** | OpenAI GPT-4o-mini for generation, text-embedding-3-small for RAG |
-| **RAG Implementation (20%)** | pgvector cosine similarity, overlapping chunks, context injection |
-| **Flashcard & Quiz (15%)** | Structured JSON output, flip animation, auto-evaluation with explanations |
-| **UI/UX (10%)** | Dark gradient UI, responsive, SSE streaming, loading states |
-| **Error Handling (10%)** | Try/catch at every layer, meaningful HTTP error responses |
-| **Documentation (5%)** | This README + inline code comments + OpenAPI docs at /docs |
